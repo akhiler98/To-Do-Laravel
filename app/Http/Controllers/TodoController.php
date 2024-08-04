@@ -13,11 +13,11 @@ class TodoController extends Controller
         $validatedData = $request->validate([
             'name' => 'required',
             'description' => 'nullable',
-            'days' => 'required',
+            'day' => 'required',
         ],);
 
         
-          $uncompletedCount = Todo::where('days', $request->input('days'))
+          $uncompletedCount = Todo::where('day', $request->input('day'))
                                   ->where('task_completed', 'no')
                                   ->count();
 
@@ -29,7 +29,7 @@ class TodoController extends Controller
       $todolist = new Todo();  
       $todolist->name = $request->input('name');
       $todolist->description = $request->input('description');
-      $todolist->days = $request->input('days');
+      $todolist->day = $request->input('day');
       $todolist->save();
       
       return response()->json(['message' => 'Task created successfully']);
@@ -56,13 +56,26 @@ class TodoController extends Controller
         $validatedData = $request->validate([
             'name' => 'required',
             'description' => 'nullable',
-            'days' => 'required',
+            'day' => 'required',
         ],);
+
+        
+        if ($request->task_completed === 'no') {
+          $uncompletedCount = Todo::where('day', $request->input('day'))
+                                  ->where('id', '!=', $id)
+                                  ->where('task_completed', 'no')
+                                  ->count();
+
+          if ($uncompletedCount >= 2) {
+              return response()->json(['message' => 'You can only have two uncompleted tasks for this day.'], 400);
+          }
+        }
+      
 
       $todo = Todo:: findOrFail($id);
       $todo->name = $request->input('name');
       $todo->description = $request->input('description');
-      $todo->days = $request->input('days');
+      $todo->day = $request->input('day');
       $todo->save();
       
       return response()->json(['message' => 'Task updated successfully']);
@@ -75,8 +88,21 @@ class TodoController extends Controller
     public function checkComplete(Request $request,$id)
     {
       
+
       $task = $request->input('completed');
+
       $todo = Todo:: findOrFail($id);
+
+      if($task === 'no'){
+        $uncompletedCount = Todo::where('day', $todo->day)
+        ->where('task_completed', 'no')
+        ->count();
+
+       if ($uncompletedCount >= 2) {
+       return response()->json(['message' => 'You can only have two uncompleted tasks for this day.' ],400);
+       }
+        
+      }
       $todo->task_completed = $task;
       $todo->save();
       
